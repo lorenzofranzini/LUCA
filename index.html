@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong: Ancient Edition</title>
+    <style>
+        /* CSS: L'estetica del gioco */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #1a1a1a;
+            color: #f0e68c; /* Color pergamena */
+            font-family: 'Times New Roman', serif;
+        }
+        h1 { margin-bottom: 10px; text-transform: uppercase; letter-spacing: 3px; }
+        canvas {
+            border: 4px solid #f0e68c;
+            background-color: #000;
+            cursor: none; /* Nasconde il mouse sopra il gioco */
+        }
+        .istruzioni { margin-top: 15px; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <h1>Ludus Pong</h1>
+    <canvas id="pongCanvas" width="800" height="400"></canvas>
+    <p class="istruzioni">Muovi il mouse per difendere il tuo territorio.</p>
+
+    <script>
+        // JS: La logica del gioco
+        const canvas = document.getElementById("pongCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Parametri della pallina
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 8,
+            speedX: 5,
+            speedY: 5,
+            color: "#00FF00"
+        };
+
+        // Parametri delle racchette (Paddles)
+        const paddleWidth = 10;
+        const paddleHeight = 100;
+
+        const player = {
+            x: 0,
+            y: canvas.height / 2 - paddleHeight / 2,
+            score: 0
+        };
+
+        const computer = {
+            x: canvas.width - paddleWidth,
+            y: canvas.height / 2 - paddleHeight / 2,
+            score: 0
+        };
+
+        // Controllo Player tramite Mouse
+        canvas.addEventListener("mousemove", (event) => {
+            let rect = canvas.getBoundingClientRect();
+            player.y = event.clientY - rect.top - paddleHeight / 2;
+        });
+
+        // Funzioni di disegno
+        function drawRect(x, y, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, w, h);
+        }
+
+        function drawCircle(x, y, r, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawText(text, x, y) {
+            ctx.fillStyle = "#f0e68c";
+            ctx.font = "40px 'Times New Roman'";
+            ctx.fillText(text, x, y);
+        }
+
+        // Funzione di Reset dopo un punto
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.speedX = -ball.speedX; // Cambia direzione
+            ball.speedY = 5 * (Math.random() > 0.5 ? 1 : -1);
+        }
+
+        // Calcoli e collisioni
+        function update() {
+            ball.x += ball.speedX;
+            ball.y += ball.speedY;
+
+            // IA del Computer (leggermente imperfetta per poter vincere)
+            let computerLevel = 0.08; 
+            computer.y += (ball.y - (computer.y + paddleHeight / 2)) * computerLevel;
+
+            // Rimbalzo bordi superiore/inferiore
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.speedY = -ball.speedY;
+            }
+
+            // Punti
+            if (ball.x < 0) {
+                computer.score++;
+                resetBall();
+            } else if (ball.x > canvas.width) {
+                player.score++;
+                resetBall();
+            }
+
+            // Collisioni con le racchette
+            let currentPaddle = (ball.x < canvas.width / 2) ? player : computer;
+
+            if (ball.x + ball.radius > currentPaddle.x && 
+                ball.x - ball.radius < currentPaddle.x + paddleWidth &&
+                ball.y > currentPaddle.y && 
+                ball.y < currentPaddle.y + paddleHeight) {
+                
+                ball.speedX = -ball.speedX;
+                // Accelera leggermente a ogni colpo
+                ball.speedX *= 1.05; 
+            }
+        }
+
+        // Renderizzazione grafica
+        function render() {
+            // Sfondo
+            drawRect(0, 0, canvas.width, canvas.height, "#000");
+
+            // Rete
+            for(let i=0; i<canvas.height; i+=30) {
+                drawRect(canvas.width/2 - 1, i, 2, 15, "#333");
+            }
+
+            // Punteggi
+            drawText(player.score, canvas.width / 4, 60);
+            drawText(computer.score, 3 * canvas.width / 4, 60);
+
+            // Racchette e Pallina
+            drawRect(player.x, player.y, paddleWidth, paddleHeight, "#f0e68c");
+            drawRect(computer.x, computer.y, paddleWidth, paddleHeight, "#f0e68c");
+            drawCircle(ball.x, ball.y, ball.radius, ball.color);
+        }
+
+        // Game Loop
+        function game() {
+            update();
+            render();
+        }
+
+        const fps = 60;
+        setInterval(game, 1000 / fps);
+    </script>
+</body>
+</html>
